@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.xxx.system.mapper.DictMapper">
+
+    <select id="listByType" resultType="com.xxx.system.entity.Dict">
+        SELECT id, dict_type, dict_code, dict_name, sort_order
+        FROM t_s_dict
+        WHERE deleted = 0 AND dict_type = #{dictType}
+        ORDER BY sort_order ASC, id ASC
+    </select>
+
+</mapper>
+
+

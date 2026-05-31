@@ -1,0 +1,102 @@
+node('jenkins-slave') {
+
+    //git代码路径
+    def gitrepoUrl = 'http://192.168.10.213:3080/common/web-cli.git'
+
+    //用户git账户的凭据ID
+    def GIT_credentialID = 'lizhenjie'
+
+    env.GIT_BRANCH = GIT_BRANCH.replace('origin/','')
+    
+    //容器镜像仓库地址
+    env.imgrepoAddr = 'repository.lhczops.local'
+
+    //项目名称（只能包含小写字母数字字符或“-”，以字母字符开始，以字母数字字符结束）
+    env.ProgramName = 'lhcz-5a'
+
+    //工程名称（必须包含小写字母数字字符或“-”，以字母字符开始，以字母数字字符结束）
+    env.ProjectName = 'web-cli'
+
+    //应用配置的端口号
+    env.ContainerPort = '80'
+
+    //将要要发布到k8s集群中的namespace名称（必须包含小写字母数字字符或“-”，以字母字符开始，以字母数字字符结束）
+    env.NS = 'lhcz-5a'
+
+    //当前时间
+    env.BDATE = new Date().format("yyyyMMdd_HHmmss")
+    env.BUILD_VERSION=BDATE
+
+    //Dockerfile MAINTAINER user
+    env.Actor="lizhengjie"
+
+    ///Dockerfile MAINTAINER email
+    env.Email="lizhenjie979@163.com"
+
+    //Nodejs版本
+    env.Node_Version = 'Node-v14'
+
+    //清空工作目录
+    //deleteDir()
+
+    stage('get clone') {
+        //check CODE
+        container('jnlp') {
+            // git branch: "develop", credentialsId: "${GIT_credentialID}", url: "${gitrepoUrl}"
+            git branch: "${GIT_BRANCH}", credentialsId: "${GIT_credentialID}", url: "${gitrepoUrl}"
+            env.GIT_COMMIT_ID = sh(returnStdout: true, script: 'git rev-parse --short=10 HEAD').trim()
+        }
+    }
+
+    stage('build'){
+        //编译打包
+        container('centos7-compile') {
+            nodejs(cacheLocationStrategy: workspace(), nodeJSInstallationName: "${Node_Version}") {
+                sh "npm config set cache ${AGENT_WORKDIR}/workspace"
+                sh "npm config set registry http://192.168.10.213:58081/repository/npm-all/"
+                sh "npm config set sass_binary_site=http://192.168.10.213:58081/repository/taobao-node-sass"
+                sh "npm config set proxy=http://192.168.10.21:58118"
+                env.HTTPS_PROXY = 'http://192.168.10.21:58118'
+                sh "npm install --unsafe-perm=true --allow-root"
+                sh "npm run build"
+                env.HTTPS_PROXY = ''
+            }
+        }
+    }
+
+    // stage('sonar scan code') {
+    //     //scan CODE
+    //     container('jnlp') {
+    //         nodejs(cacheLocationStrategy: workspace(), nodeJSInstallationName: "${Node_Version}") {
+    //             sh "${SONAR_HOME}/bin/sonar-scanner -Dsonar.projectKey=${ProjectName} -Dsonar.projectName=${ProjectName} -Dsonar.projectVersion=${GIT_BRANCH}_${GIT_COMMIT_ID} -Dsonar.exclusions=**/node_modules/**/* -Dsonar.language=JavaScript"
+    //         }
+    //     }
+    // }
+
+    stage('build image') {
+        container('docker') {
+            sh "echo \"192.168.10.210 ${imgrepoAddr}\" >> /etc/hosts"
+            sh "cat /etc/hosts"
+            sh "tar cfvz AutoCFG/BuildIMG/dist.tar.gz dist"
+            sh "envsubst < AutoCFG/BuildIMG/Dockerfile_tpl > AutoCFG/BuildIMG/Dockerfile"
+            sh "chown 1000:1000 -R AutoCFG/BuildIMG"
+            sh "cd AutoCFG/BuildIMG && docker build -t ${imgrepoAddr}/${ProgramName}/${ProjectName}:${GIT_BRANCH}-${BUILD_VERSION}-${GIT_COMMIT_ID} ."
+        }
+    }
+
+    stage('push image') {
+        container('docker') {
+            withDockerRegistry(credentialsId: 'Registry', url: "http://${imgrepoAddr}") {
+                sh "docker push ${imgrepoAddr}/${ProgramName}/${ProjectName}:${GIT_BRANCH}-${BUILD_VERSION}-${GIT_COMMIT_ID}"
+            }
+        }
+    }
+    
+    stage('kubernetes deploy') {
+        container('docker') {
+            sh "envsubst < AutoCFG/K8S_Templates/deployment.tpl > AutoCFG/K8S_Templates/deployment.yaml"
+            sh "envsubst < AutoCFG/K8S_Templates/service.tpl > AutoCFG/K8S_Templates/service.yaml"
+            sh "kubectl apply -n ${NS} -f ./AutoCFG/K8S_Templates"
+        }
+    }
+}

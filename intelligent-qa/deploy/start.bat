@@ -1,0 +1,1 @@
+java -jar intelligent-qa-1.0-SNAPSHOT.jar --spring.config.location=.\conf\

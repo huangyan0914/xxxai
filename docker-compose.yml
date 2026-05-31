@@ -1,0 +1,138 @@
+services:
+  ai-model-lifecycle:
+    image: amazoncorretto:8-alpine-jdk
+    container_name: ai-model-lifecycle
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "9905:9905"
+    volumes:
+      - ./ai-model-lifecycle/deploy/ai-model-lifecycle-1.0-SNAPSHOT.jar:/app/app.jar:ro
+      - ./ai-model-lifecycle/deploy/conf:/app/conf:ro
+      - ./logs/ai-model-lifecycle:/logs
+    command:
+      - /bin/sh
+      - -c
+      - java -jar /app/app.jar --spring.config.location=file:/app/conf/ 2>&1 | tee -a /logs/stdout.log
+    environment:
+      TZ: Asia/Shanghai
+
+  intelligent-qa:
+    image: amazoncorretto:8-alpine-jdk
+    container_name: intelligent-qa
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "9910:9910"
+    volumes:
+      - ./intelligent-qa/deploy/intelligent-qa-1.0-SNAPSHOT.jar:/app/app.jar:ro
+      - ./intelligent-qa/deploy/conf:/app/conf:ro
+      - ./intelligent-qa/uploads:/app/uploads
+      - ./logs/intelligent-qa:/logs
+    command:
+      - /bin/sh
+      - -c
+      - java -jar /app/app.jar --spring.config.location=file:/app/conf/ 2>&1 | tee -a /logs/stdout.log
+    environment:
+      TZ: Asia/Shanghai
+
+  training-management:
+    image: amazoncorretto:8-alpine-jdk
+    container_name: training-management
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "9901:9901"
+    volumes:
+      - ./training-management/deploy/training-management-1.0-SNAPSHOT.jar:/app/app.jar:ro
+      - ./training-management/deploy/conf:/app/conf:ro
+      - ./training-management/uploads:/app/uploads
+      - ./logs/training-management:/logs
+    command:
+      - /bin/sh
+      - -c
+      - java -jar /app/app.jar --spring.config.location=file:/app/conf/ 2>&1 | tee -a /logs/stdout.log
+    environment:
+      TZ: Asia/Shanghai
+
+  principle-training:
+    image: amazoncorretto:8-alpine-jdk
+    container_name: principle-training
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "9908:9908"
+    volumes:
+      - ./principle-training/deploy/principle-training-1.0-SNAPSHOT.jar:/app/app.jar:ro
+      - ./principle-training/deploy/conf:/app/conf:ro
+      - ./logs/principle-training:/logs
+    command:
+      - /bin/sh
+      - -c
+      - java -jar /app/app.jar --spring.config.location=file:/app/conf/ 2>&1 | tee -a /logs/stdout.log
+    environment:
+      TZ: Asia/Shanghai
+
+  ai-model-lifecycle-frontend:
+    image: nginx:alpine
+    container_name: ai-model-lifecycle-frontend
+    restart: unless-stopped
+    depends_on:
+      - ai-model-lifecycle
+    ports:
+      - "8081:80"
+    volumes:
+      - ./x-frontend/ai-model-lifecycle-frontend/dist:/usr/share/nginx/html:ro
+      - ./x-frontend/nginx/ai-model-lifecycle.conf:/etc/nginx/conf.d/default.conf:ro
+
+  intelligent-qa-frontend:
+    image: nginx:alpine
+    container_name: intelligent-qa-frontend
+    restart: unless-stopped
+    depends_on:
+      - intelligent-qa
+    ports:
+      - "8082:80"
+    volumes:
+      - ./x-frontend/intelligent-qa-frontend/dist:/usr/share/nginx/html:ro
+      - ./x-frontend/nginx/intelligent-qa.conf:/etc/nginx/conf.d/default.conf:ro
+
+  training-management-frontend:
+    image: nginx:alpine
+    container_name: training-management-frontend
+    restart: unless-stopped
+    depends_on:
+      - training-management
+    ports:
+      - "8083:80"
+    volumes:
+      - ./x-frontend/TraningManagement/dist:/usr/share/nginx/html:ro
+      - ./x-frontend/nginx/training-management.conf:/etc/nginx/conf.d/default.conf:ro
+
+  principles-training-frontend:
+    image: nginx:alpine
+    container_name: principles-training-frontend
+    restart: unless-stopped
+    depends_on:
+      - principle-training
+      - training-management
+    ports:
+      - "8084:80"
+    volumes:
+      - ./x-frontend/PrinciplesTraining/dist:/usr/share/nginx/html:ro
+      - ./x-frontend/nginx/principles-training.conf:/etc/nginx/conf.d/default.conf:ro
+
+  base-frontend:
+    image: nginx:alpine
+    container_name: base-frontend
+    restart: unless-stopped
+    depends_on:
+      - ai-model-lifecycle-frontend
+      - intelligent-qa-frontend
+      - training-management-frontend
+      - principles-training-frontend
+    ports:
+      - "8000:80"
+    volumes:
+      - ./x-frontend/base/dist:/usr/share/nginx/html:ro
+      - ./x-frontend/nginx/base.conf:/etc/nginx/conf.d/default.conf:ro

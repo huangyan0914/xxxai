@@ -1,0 +1,1 @@
+java -jar ai-model-lifecycle-1.0-SNAPSHOT.jar --spring.config.location=.\conf\

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.xxx.qa.mapper.QaShareMapper">
+
+    <resultMap id="ShareVoMap" type="com.xxx.qa.vo.ShareVO">
+        <id property="id"           column="id"/>
+        <result property="sessionId"    column="session_id"/>
+        <result property="sessionTitle" column="session_title"/>
+        <result property="fromUserId"   column="from_user_id"/>
+        <result property="toUserId"     column="to_user_id"/>
+        <result property="createTime"   column="create_time"/>
+    </resultMap>
+
+    <select id="pageSent" resultMap="ShareVoMap">
+        SELECT id, session_id, session_title, from_user_id, to_user_id, create_time
+        FROM t_qa_share
+        WHERE deleted = 0
+          AND from_user_id = #{fromUserId}
+        ORDER BY id DESC
+    </select>
+
+    <select id="pageReceived" resultMap="ShareVoMap">
+        SELECT id, session_id, session_title, from_user_id, to_user_id, create_time
+        FROM t_qa_share
+        WHERE deleted = 0
+          AND to_user_id = #{toUserId}
+        ORDER BY id DESC
+    </select>
+
+</mapper>
+

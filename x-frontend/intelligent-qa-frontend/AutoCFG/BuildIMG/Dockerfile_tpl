@@ -1,0 +1,7 @@
+FROM ${imgrepoAddr}/library/nginx:1.20.1
+MAINTAINER ${Actor} <${Email}>
+
+COPY default.conf /etc/nginx/conf.d
+ADD dist.tar.gz /opt/website
+RUN chown nginx:nginx -R /opt/website
+EXPOSE ${ContainerPort}

@@ -1,0 +1,47 @@
+server:
+  port: 9905
+
+spring:
+  datasource:
+    url: jdbc:postgresql://47.94.1.34:54321/kingbase
+    username: kingbase
+    password: caeit123
+    driver-class-name: org.postgresql.Driver
+  jackson:
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# Knife4j 接口文档
+knife4j:
+  enable: true
+  production: false
+  basic:
+    enable: false
+  setting:
+    language: zh-CN
+    enable-swagger-model: true
+
+auth:
+  use-fixed-admin: true
+
+lazycraft:
+  base-url: http://localhost:30382
+  console-api-prefix: /console/api
+  username: admin
+  password: LazyCraft@2025
+  token-ttl-seconds: 3300

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.xxx.system.mapper.SysUserMapper">
+
+    <select id="pageUsers" resultType="com.xxx.system.vo.SysUserVO">
+        SELECT DISTINCT
+            u.id,
+            u.username,
+            u.real_name AS realName,
+            u.avatar,
+            u.gender,
+            u.student_no AS studentNo,
+            u.phone,
+            u.email,
+            u.status,
+            u.register_time AS registerTime,
+            u.create_time AS createTime,
+            u.update_time AS updateTime
+        FROM t_s_user u
+        <if test="q.userGroupId != null">
+            INNER JOIN t_s_user_group_member ugm
+                ON ugm.user_id = u.id AND ugm.deleted = 0 AND ugm.user_group_id = #{q.userGroupId}
+        </if>
+        <if test="q.roleId != null">
+            INNER JOIN t_s_user_role ur
+                ON ur.user_id = u.id AND ur.deleted = 0 AND ur.role_id = #{q.roleId}
+        </if>
+        WHERE u.deleted = 0
+        <if test="q.username != null and q.username != ''">
+            AND u.username LIKE CONCAT('%', #{q.username}, '%')
+        </if>
+        <if test="q.realName != null and q.realName != ''">
+            AND u.real_name LIKE CONCAT('%', #{q.realName}, '%')
+        </if>
+        <if test="q.status != null and q.status != ''">
+            AND u.status = #{q.status}
+        </if>
+        ORDER BY u.id DESC
+    </select>
+
+</mapper>
+
