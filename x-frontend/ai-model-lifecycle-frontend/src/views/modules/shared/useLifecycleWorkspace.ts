@@ -578,7 +578,11 @@ export function useLifecycleWorkspace(props: { moduleKey: ModuleKey }) {
 
   function buildInferenceServicePayload(payload: Record<string, any>) {
     const selectedModel = inferenceModelMeta.value[String(payload.model_id)] || {}
-    payload.model_type = payload.model_type || selectedModel.model_type || selectedModel.model_kind || 'localLLM'
+    const requestedModelKind = payload.model_type
+    payload.model_type = selectedModel.model_type || payload.model_type || 'local'
+    if (selectedModel.model_kind || requestedModelKind) {
+      payload.model_kind = selectedModel.model_kind || requestedModelKind
+    }
 
     const serviceName = payload.service_name
     const modelNumGpus = payload.model_num_gpus
@@ -597,11 +601,12 @@ export function useLifecycleWorkspace(props: { moduleKey: ModuleKey }) {
   function buildFinetunePayload(payload: Record<string, any>) {
     const datasets = arrayFrom(payload.datasets)
     const datasetsType = datasets.map(dataset => getDatasetFormat(dataset))
+    const selectedModel = finetuneModelMeta.value[String(payload.base_model_key)] || {}
     return {
       base: {
         name: payload.name,
-        base_model: Number(payload.base_model ?? 0),
-        base_model_key: payload.base_model_key,
+        base_model: normalizeNumericValue(selectedModel.base_model ?? selectedModel.id ?? payload.base_model),
+        base_model_key: payload.base_model_key || selectedModel.base_model_key,
         target_model_name: payload.target_model_name,
         datasets,
         datasets_type: datasetsType,
@@ -852,6 +857,14 @@ export function useLifecycleWorkspace(props: { moduleKey: ModuleKey }) {
     return datasetFormatAlias[text] || text
   }
 
+  function normalizeNumericValue(value: any) {
+    if (typeof value === 'number') return value
+    if (typeof value === 'string' && value.trim() !== '' && !Number.isNaN(Number(value))) {
+      return Number(value)
+    }
+    return value
+  }
+
   function arrayFrom(value: any) {
     if (Array.isArray(value)) return value
     return value ? [value] : []
@@ -1080,6 +1093,7 @@ export function useLifecycleWorkspace(props: { moduleKey: ModuleKey }) {
       const result = payload?.result || payload?.data || payload
       const datasetId = result?.dataset_id || result?.datasetId || result?.result?.dataset_id
       if (datasetId) {
+        formModel.evaluation_type = 'offline'
         const current = arrayFrom(formModel.dataset_id)
         formModel.dataset_id = [...current, datasetId].join(',')
       }

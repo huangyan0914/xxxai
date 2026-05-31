@@ -116,7 +116,9 @@ public class LazyCraftServiceImpl implements LazyCraftService {
 
     @Override
     public Object pageFinetunes(LazyCraftPageQueryDTO query) {
-        Map<String, Object> body = pageBody(query);
+        Map<String, Object> body = new HashMap<>();
+        body.put("page", query.getPageNo());
+        body.put("limit", query.getPageSize());
         body.put("search_name", defaultString(query.getKeyword()));
         body.put("user_id", defaultList(query.getUserId()));
         body.put("status", defaultList(query.getStatus()));
@@ -460,4 +462,3 @@ public class LazyCraftServiceImpl implements LazyCraftService {
         }
     }
 }
-
