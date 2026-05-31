@@ -8,8 +8,8 @@
     <artifactId>x-wxwh</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>X-WXWH 教培综合平台</name>
-    <description>多模块教培管理平台：培训、数据、AI模型、运维、评估等</description>
+    <name>xxxai</name>
+
 
     <modules>
         <!-- 公共模块（含 Resp、Knife4j 文档） -->
